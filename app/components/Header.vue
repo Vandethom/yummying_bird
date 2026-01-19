@@ -6,21 +6,43 @@
         <img src="/images/logo.png" alt="Logo">
       </div>
 
+      <!-- Burger menu pour mobile -->
+      <button class="burger-menu" @click="toggleMenu" :class="{ 'active': isMenuOpen }">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
       <!-- Navigation au centre -->
-      <nav class="nav">
-        <NuxtLink to="/" class="nav-link">Accueil</NuxtLink>
-        <NuxtLink to="/carte" class="nav-link">Carte</NuxtLink>
-        <NuxtLink to="/recettes" class="nav-link">Recettes</NuxtLink>
-        <NuxtLink to="/a-propos" class="nav-link">A propos</NuxtLink>
+      <nav class="nav" :class="{ 'active': isMenuOpen }">
+        <NuxtLink to="/" class="nav-link" @click="closeMenu">Accueil</NuxtLink>
+        <NuxtLink to="/carte" class="nav-link" @click="closeMenu">Carte</NuxtLink>
+        <NuxtLink to="/recettes" class="nav-link" @click="closeMenu">Recettes</NuxtLink>
+        <NuxtLink to="/a-propos" class="nav-link" @click="closeMenu">A propos</NuxtLink>
+        
+        <!-- Bouton Réserver dans le menu mobile -->
+        <button class="btn-reserver mobile-only" @click="closeMenu">Réserver</button>
       </nav>
 
-      <!-- Bouton Réserver à droite -->
-      <div class="actions">
+      <!-- Bouton Réserver à droite (desktop uniquement) -->
+      <div class="actions desktop-only">
         <button class="btn-reserver">Réserver</button>
       </div>
     </div>
   </header>
 </template>
+
+<script setup lang="ts">
+const isMenuOpen = ref(false)
+
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
+</script>
 
 <style scoped>
 .header {
@@ -138,53 +160,124 @@
   box-shadow: 0 2px 4px rgba(193, 75, 37, 0.3);
 }
 
+/* Burger Menu */
+.burger-menu {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1001;
+}
+
+.burger-menu span {
+  width: 25px;
+  height: 3px;
+  background-color: #333;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.burger-menu.active span:nth-child(1) {
+  transform: rotate(45deg) translate(8px, 8px);
+}
+
+.burger-menu.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-menu.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: flex;
+}
+
 /* Responsive */
+@media (max-width: 1024px) {
+  .nav {
+    gap: 1.5rem;
+  }
+
+  .nav-link {
+    font-size: 0.95rem;
+  }
+}
+
 @media (max-width: 768px) {
+  .header {
+    padding: 1rem 1.5rem;
+    height: auto;
+  }
+
+  .burger-menu {
+    display: flex;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .nav {
+    position: fixed;
+    top: 72px;
+    left: 0;
+    right: 0;
+    background: #d6e5f2;
+    flex-direction: column;
+    padding: 2rem;
+    gap: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+  }
+
+  .nav.active {
+    transform: translateX(0);
+  }
+
+  .nav-link {
+    font-size: 1.1rem;
+    padding: 0.5rem 0;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-link::after {
+    display: none;
+  }
+
+  .mobile-only {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
   .header {
     padding: 1rem;
   }
 
-  .header-container {
-    gap: 1rem;
+  .logo img {
+    max-height: 40px;
   }
 
   .nav {
-    gap: 1rem;
+    padding: 1.5rem 1rem;
   }
 
   .nav-link {
-    font-size: 0.9rem;
-  }
-
-  .btn-reserver {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .header-container {
-    flex-wrap: wrap;
-  }
-
-  .logo {
-    flex: 1;
-  }
-
-  .nav {
-    order: 3;
-    width: 100%;
-    justify-content: space-around;
-    margin-top: 0.5rem;
-  }
-
-  .nav-link {
-    font-size: 0.85rem;
-  }
-
-  .btn-reserver {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    font-size: 1rem;
   }
 }
 </style>

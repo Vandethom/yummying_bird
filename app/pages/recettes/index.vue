@@ -28,75 +28,100 @@
         <h2 class="creations-title">Les créations du chef</h2>
         <p class="creations-subtitle">Découvrez chaque recette avec ses secrets et ses astuces.</p>
         
-        <div class="recipes-grid">
-          <div class="recipe-card">
+        <div v-if="loading" class="loading">Chargement des recettes...</div>
+        
+        <div v-else-if="error" class="error-message">{{ error }}</div>
+        
+        <div v-else-if="recipes.length === 0" class="no-recipes">
+          Aucune recette disponible pour le moment.
+        </div>
+        
+        <div v-else class="recipes-grid">
+          <div v-for="recipe in displayedRecipes" :key="recipe.id" class="recipe-card">
             <div class="recipe-image">
-              <img src="/images/recette-hero.jpg" alt="Soupe à l'oignon gratinée" class="recipe-img">
+              <img :src="recipe.image" :alt="recipe.title" class="recipe-img">
             </div>
             <div class="recipe-content">
               <div class="recipe-tags">
-                <span class="recipe-tag">Entrées</span>
-                <span class="recipe-tag">Lecture rapide</span>
+                <span class="recipe-tag">{{ recipe.category }}</span>
+                <span v-for="tag in recipe.tags" :key="tag" class="recipe-tag">{{ tag }}</span>
               </div>
-              <h3 class="recipe-title">Soupe à l'oignon gratinée</h3>
-              <p class="recipe-text">Une recette classique qui demande du temps et de la patience pour réussir.</p>
-              <a href="#" class="recipe-link">Lire plus →</a>
-            </div>
-          </div>
-          
-          <div class="recipe-card">
-            <div class="recipe-image">
-              <img src="/images/recette-hero.jpg" alt="Coq au vin avec légumes" class="recipe-img">
-            </div>
-            <div class="recipe-content">
-              <div class="recipe-tags">
-                <span class="recipe-tag">Plats</span>
-                <span class="recipe-tag">Lecture rapide</span>
+              <h3 class="recipe-title">{{ recipe.title }}</h3>
+              <p class="recipe-text">{{ recipe.description }}</p>
+              <div class="recipe-meta">
+                <span class="recipe-time">⏱️ {{ recipe.prepTime + recipe.cookTime }} min</span>
+                <span class="recipe-servings">👥 {{ recipe.servings }} pers.</span>
               </div>
-              <h3 class="recipe-title">Coq au vin avec légumes</h3>
-              <p class="recipe-text">Un plat qui raconte l'histoire de la cuisine française authentique et généreuse.</p>
-              <a href="#" class="recipe-link">Lire plus →</a>
-            </div>
-          </div>
-          
-          <div class="recipe-card">
-            <div class="recipe-image">
-              <img src="/images/recette-hero.jpg" alt="Tarte aux pommes maison" class="recipe-img">
-            </div>
-            <div class="recipe-content">
-              <div class="recipe-tags">
-                <span class="recipe-tag">Desserts</span>
-                <span class="recipe-tag">Lecture rapide</span>
-              </div>
-              <h3 class="recipe-title">Tarte aux pommes maison</h3>
-              <p class="recipe-text">Simple et délicieuse, cette tarte montre comment les bons ingrédients suffisent.</p>
-              <a href="#" class="recipe-link">Lire plus →</a>
-            </div>
-          </div>
-          
-          <div class="recipe-card">
-            <div class="recipe-image">
-              <img src="/images/recette-hero.jpg" alt="Soupe à l'oignon gratinée" class="recipe-img">
-            </div>
-            <div class="recipe-content">
-              <div class="recipe-tags">
-                <span class="recipe-tag">Entrées</span>
-                <span class="recipe-tag">Dix minutes</span>
-              </div>
-              <h3 class="recipe-title">Soupe à l'oignon gratinée</h3>
-              <p class="recipe-text">Une recette classique qui demande du temps et de la patience pour réussir.</p>
-              <a href="#" class="recipe-link">Voir toutes →</a>
+              <NuxtLink :to="`/recettes/${recipe.id}`" class="recipe-link">Lire plus →</NuxtLink>
             </div>
           </div>
         </div>
         
-        <div class="creations-footer">
-          <button class="voir-plus-btn">Voir plus</button>
+        <div v-if="recipes.length > recipesPerPage" class="creations-footer">
+          <button class="voir-plus-btn" @click="loadMore" :disabled="displayedRecipes.length >= recipes.length">
+            {{ displayedRecipes.length >= recipes.length ? 'Toutes les recettes affichées' : 'Voir plus' }}
+          </button>
         </div>
       </div>
     </section>
   </div>
 </template>
+
+<script setup lang="ts">
+interface Recipe {
+  id: string
+  title: string
+  description: string
+  image: string
+  category: string
+  prepTime: number
+  cookTime: number
+  servings: number
+  ingredients: string[]
+  instructions: string[]
+  tags: string[]
+  createdAt: string
+}
+
+const recipes = ref<Recipe[]>([])
+const loading = ref(true)
+const error = ref('')
+const recipesPerPage = 4
+const displayedCount = ref(recipesPerPage)
+
+const displayedRecipes = computed(() => {
+  return recipes.value.slice(0, displayedCount.value)
+})
+
+const loadMore = () => {
+  displayedCount.value += recipesPerPage
+}
+
+const fetchRecipes = async () => {
+  try {
+    loading.value = true
+    error.value = ''
+    
+    const response = await $fetch('/api/recipes')
+    
+    if (response.success && Array.isArray(response.data)) {
+      recipes.value = response.data
+    } else {
+      recipes.value = []
+    }
+  } catch (err: any) {
+    console.error('Erreur lors de la récupération des recettes:', err)
+    error.value = 'Impossible de charger les recettes. Veuillez réessayer plus tard.'
+  } finally {
+    loading.value = false
+  }
+}
+
+// Charger les recettes au montage du composant
+onMounted(() => {
+  fetchRecipes()
+})
+</script>
 
 <style scoped>
 .recettes-page {
@@ -372,6 +397,38 @@
   color: #c14b25;
 }
 
+.recipe-meta {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.recipe-time,
+.recipe-servings {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.loading,
+.error-message,
+.no-recipes {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.error-message {
+  color: #e74c3c;
+  background-color: #ffebee;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
 .creations-footer {
   display: flex;
   justify-content: center;
@@ -390,10 +447,15 @@
   transition: all 0.3s ease;
 }
 
-.voir-plus-btn:hover {
+.voir-plus-btn:hover:not(:disabled) {
   background-color: #333;
   color: white;
   transform: translateY(-2px);
+}
+
+.voir-plus-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Responsive pour Créations */
